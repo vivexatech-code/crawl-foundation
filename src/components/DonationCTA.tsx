@@ -63,7 +63,7 @@ export default function DonationCTA({ ngo, content }: DonationCTAProps) {
         {/* Main CTA Button: Ocean Blue with Medium Rounded Corners (~52px height) */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            href={`/donate?ngo=${ngo.slug}&amount=${selectedAmount}`}
+            href={`/site/${ngo.slug}/donate?amount=${selectedAmount}`}
             className="w-full sm:w-auto inline-flex items-center justify-center px-10 h-[52px] rounded-xl text-base font-bold text-white bg-[#087FC1] hover:bg-[#076ea7] shadow-warm transition-all duration-200"
           >
             <Heart className="w-4 h-4 mr-2.5 fill-white" />

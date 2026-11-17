@@ -135,7 +135,7 @@ export default function GalleryPreview({ ngo, items }: GalleryPreviewProps) {
               </div>
 
               <Link
-                href={`/donate?ngo=${ngo.slug}`}
+                href={`/site/${ngo.slug}/donate`}
                 className="px-5 h-[42px] rounded-xl text-xs font-bold text-white bg-[#087FC1] hover:bg-[#076ea7] inline-flex items-center justify-center transition shrink-0"
               >
                 Support This Cause

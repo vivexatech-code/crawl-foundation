@@ -221,7 +221,7 @@ export default function DonationForm({ ngo, settings, purposes, initialAmount }:
       } catch (e) {}
 
       // Redirect to official receipt page
-      router.push(`/donation-success?id=${verifyData.donationId}&receipt=${verifyData.receiptNumber}&ngo=${ngo.slug}`);
+      router.push(`/site/${ngo.slug}/donation-success?id=${verifyData.donationId}&receipt=${verifyData.receiptNumber}`);
     } catch (err: any) {
       setErrorMessage(err.message || 'Payment verification failed on the server.');
       setLoading(false);

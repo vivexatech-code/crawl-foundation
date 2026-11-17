@@ -43,7 +43,7 @@ export default function HeroSection({ ngo, content }: HeroSectionProps) {
             {/* Button System: Primary Ocean Blue & Secondary Navy Outline */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 pt-2">
               <Link
-                href={`/donate?ngo=${ngo.slug}`}
+                href={`/site/${ngo.slug}/donate`}
                 className="inline-flex items-center justify-center px-8 h-[52px] rounded-xl text-base font-semibold text-white bg-[#087FC1] hover:bg-[#076ea7] shadow-subtle hover:shadow-warm transition-all duration-200"
               >
                 <Heart className="w-4 h-4 mr-2.5 fill-white" />
@@ -68,14 +68,14 @@ export default function HeroSection({ ngo, content }: HeroSectionProps) {
                 {quickAmounts.map((amt) => (
                   <Link
                     key={amt}
-                    href={`/donate?ngo=${ngo.slug}&amount=${amt}`}
+                    href={`/site/${ngo.slug}/donate?amount=${amt}`}
                     className="px-3.5 py-1.5 rounded-lg bg-white border border-[#E8E5DE] hover:border-[#087FC1] hover:text-[#087FC1] text-xs font-bold text-[#292D32] shadow-subtle transition"
                   >
                     ₹{amt.toLocaleString('en-IN')}
                   </Link>
                 ))}
                 <Link
-                  href={`/donate?ngo=${ngo.slug}`}
+                  href={`/site/${ngo.slug}/donate`}
                   className="text-xs font-medium text-[#087FC1] hover:underline ml-1"
                 >
                   or custom amount →

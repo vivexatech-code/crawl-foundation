@@ -1,4 +1,3 @@
-import { headers } from 'next/headers';
 import { db } from './db';
 import { NGO, SiteSettings, HomepageContent, Activity, TeamMember, GalleryItem, DonationPurpose } from '../types/database';
 
@@ -12,20 +11,27 @@ export interface NgoSiteData {
   gallery: GalleryItem[];
 }
 
-export async function resolveCurrentNgo(querySlug?: string): Promise<NGO | null> {
-  let host = '';
-  try {
-    const headersList = headers();
-    host = headersList.get('host') || headersList.get('x-forwarded-host') || '';
-  } catch (e) {
-    // If called outside server request context
+/**
+ * Resolve NGO by its permanent, unique website slug.
+ * Inactive or soft-deleted organizations return null.
+ */
+export async function resolveCurrentNgo(siteSlug?: string): Promise<NGO | null> {
+  const slug = (siteSlug || '').trim().toLowerCase();
+  if (!slug) return null;
+
+  const ngo = await db.getNgoBySlug(slug);
+  if (!ngo || ngo.deleted_at || ngo.status !== 'active') {
+    return null;
   }
 
-  return await db.resolveDomainToNgo(host || 'localhost:3000', querySlug);
+  return ngo;
 }
 
-export async function getNgoFullSiteData(querySlug?: string): Promise<NgoSiteData | null> {
-  const ngo = await resolveCurrentNgo(querySlug);
+/**
+ * Fetch full published website content and settings for the given website slug.
+ */
+export async function getNgoFullSiteData(siteSlug?: string): Promise<NgoSiteData | null> {
+  const ngo = await resolveCurrentNgo(siteSlug);
   if (!ngo) return null;
 
   const [settings, homepage, purposes, activities, team, gallery] = await Promise.all([
@@ -44,6 +50,6 @@ export async function getNgoFullSiteData(querySlug?: string): Promise<NgoSiteDat
     purposes,
     activities,
     team,
-    gallery
+    gallery,
   };
 }

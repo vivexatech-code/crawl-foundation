@@ -100,8 +100,6 @@ function saveSharedData(data: any) {
   }
 }
 
-// In-memory cache for fast hostname to NGO resolution (60s TTL)
-const domainResolutionCache = new Map<string, { ngo: NGO; expires: number }>();
 
 export const db = {
   // =========================================================================
@@ -250,20 +248,6 @@ export const db = {
       cta_banner_button_text: 'Donate Now'
     };
 
-    // Provision primary default domain record
-    if (!store.domains) store.domains = [];
-    store.domains.push({
-      id: crypto.randomUUID(),
-      ngo_id: newId,
-      domain: `${newNgo.slug}.org`,
-      is_primary: true,
-      verified: true,
-      verification_token: `ngo-verify-${crypto.randomUUID().slice(0, 8)}`,
-      verification_type: 'txt',
-      verified_at: now,
-      created_at: now
-    });
-
     saveSharedData(store);
     return newNgo;
   },
@@ -280,9 +264,6 @@ export const db = {
         .select()
         .single();
       if (error) console.error('Supabase updateNgo error:', error);
-      if (!error && data) {
-        domainResolutionCache.clear();
-      }
     }
 
     const store = loadSharedData();
@@ -290,7 +271,6 @@ export const db = {
     if (idx !== -1) {
       store.ngos[idx] = { ...store.ngos[idx], ...cleanUpdates };
       saveSharedData(store);
-      domainResolutionCache.clear();
       return store.ngos[idx];
     }
     return null;
@@ -306,199 +286,11 @@ export const db = {
     if (idx !== -1) {
       store.ngos[idx].deleted_at = now;
       saveSharedData(store);
-      domainResolutionCache.clear();
       return true;
     }
     return false;
   },
 
-  // =========================================================================
-  // DOMAIN MANAGEMENT & HOSTNAME RESOLUTION
-  // =========================================================================
-  async getDomains(ngoId?: string): Promise<SiteDomain[]> {
-    if (supabase) {
-      let q = supabase.from('site_domains').select('*').is('deleted_at', null).order('created_at', { ascending: false });
-      if (ngoId) q = q.eq('ngo_id', ngoId);
-      const { data, error } = await q;
-      if (!error && data) return data;
-    }
-    const store = loadSharedData();
-    const list: SiteDomain[] = store.domains || initialDomains;
-    const active = list.filter((d: SiteDomain) => !d.deleted_at);
-    return ngoId ? active.filter((d: SiteDomain) => d.ngo_id === ngoId) : active;
-  },
-
-  async getDomainByName(domain: string): Promise<SiteDomain | null> {
-    const normalized = domain.toLowerCase().trim();
-    if (supabase) {
-      const { data, error } = await supabase
-        .from('site_domains')
-        .select('*')
-        .eq('domain', normalized)
-        .is('deleted_at', null)
-        .single();
-      if (!error && data) return data;
-    }
-    const store = loadSharedData();
-    const list: SiteDomain[] = store.domains || initialDomains;
-    return list.find((d: SiteDomain) => d.domain.toLowerCase() === normalized && !d.deleted_at) || null;
-  },
-
-  async createDomain(domainData: { ngo_id: string; domain: string; is_primary?: boolean }): Promise<SiteDomain> {
-    const normalized = domainData.domain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const now = new Date().toISOString();
-    const token = `ngo-verify-${crypto.randomUUID().slice(0, 10)}`;
-    
-    const newDomain: SiteDomain = {
-      id: crypto.randomUUID(),
-      ngo_id: domainData.ngo_id,
-      domain: normalized,
-      is_primary: domainData.is_primary ?? false,
-      verified: false,
-      verification_token: token,
-      verification_type: 'txt',
-      verified_at: null,
-      dns_records: [
-        { type: 'CNAME', host: '@', value: 'cname.ngoplatform.org', status: 'pending' },
-        { type: 'TXT', host: '_ngo-challenge', value: token, status: 'pending' }
-      ],
-      created_at: now,
-      deleted_at: null,
-    };
-
-    if (supabase) {
-      const { data, error } = await supabase.from('site_domains').insert(newDomain).select().single();
-      if (error) console.error('Supabase createDomain error:', error);
-    }
-
-    const store = loadSharedData();
-    if (!store.domains) store.domains = [];
-    
-    // If setting as primary, unset other primary domains for this NGO
-    if (newDomain.is_primary) {
-      store.domains.forEach((d: SiteDomain) => {
-        if (d.ngo_id === domainData.ngo_id) d.is_primary = false;
-      });
-    }
-    
-    store.domains.push(newDomain);
-    saveSharedData(store);
-    domainResolutionCache.clear();
-    return newDomain;
-  },
-
-  async verifyDomain(id: string): Promise<SiteDomain | null> {
-    const now = new Date().toISOString();
-    const updates = { 
-      verified: true, 
-      verified_at: now,
-      dns_records: [
-        { type: 'CNAME' as const, host: '@', value: 'cname.ngoplatform.org', status: 'valid' as const },
-        { type: 'TXT' as const, host: '_ngo-challenge', value: 'verified', status: 'valid' as const }
-      ]
-    };
-
-    if (supabase) {
-      const { data, error } = await supabase.from('site_domains').update(updates).eq('id', id).select().single();
-      if (error) console.error('Supabase verifyDomain error:', error);
-    }
-
-    const store = loadSharedData();
-    const idx = (store.domains || []).findIndex((d: SiteDomain) => d.id === id);
-    if (idx !== -1) {
-      store.domains[idx] = { ...store.domains[idx], ...updates };
-      saveSharedData(store);
-      domainResolutionCache.clear();
-      return store.domains[idx];
-    }
-    return null;
-  },
-
-  async setPrimaryDomain(id: string, ngoId: string): Promise<boolean> {
-    if (supabase) {
-      await supabase.from('site_domains').update({ is_primary: false }).eq('ngo_id', ngoId);
-      await supabase.from('site_domains').update({ is_primary: true, verified: true }).eq('id', id);
-    }
-    const store = loadSharedData();
-    (store.domains || []).forEach((d: SiteDomain) => {
-      if (d.ngo_id === ngoId) d.is_primary = (d.id === id);
-    });
-    saveSharedData(store);
-    domainResolutionCache.clear();
-    return true;
-  },
-
-  async deleteDomain(id: string): Promise<boolean> {
-    const now = new Date().toISOString();
-    if (supabase) {
-      await supabase.from('site_domains').update({ deleted_at: now }).eq('id', id);
-    }
-    const store = loadSharedData();
-    const idx = (store.domains || []).findIndex((d: SiteDomain) => d.id === id);
-    if (idx !== -1) {
-      store.domains[idx].deleted_at = now;
-      saveSharedData(store);
-      domainResolutionCache.clear();
-      return true;
-    }
-    return false;
-  },
-
-  // High-performance domain resolver with TTL memory cache
-  async resolveDomainToNgo(rawHost: string, querySlug?: string): Promise<NGO | null> {
-    if (!rawHost) return null;
-    
-    // Normalize host: strip port and leading www.
-    const host = rawHost.toLowerCase().trim().split(':')[0].replace(/^www\./, '');
-
-    // Check memory cache
-    const cached = domainResolutionCache.get(host);
-    if (cached && cached.expires > Date.now()) {
-      return cached.ngo;
-    }
-
-    // 1. Development/Localhost Resolution
-    if (host === 'localhost' || host === '127.0.0.1') {
-      if (querySlug) {
-        const ngo = await db.getNgoBySlug(querySlug);
-        if (ngo) {
-          domainResolutionCache.set(host, { ngo, expires: Date.now() + 10000 });
-          return ngo;
-        }
-      }
-      // Check if localhost is mapped to an NGO in domains
-      const localDom = await db.getDomainByName('localhost:3000') || await db.getDomainByName('localhost');
-      if (localDom && localDom.verified) {
-        const ngo = await db.getNgoById(localDom.ngo_id);
-        if (ngo) return ngo;
-      }
-      // Fallback to default configured NGO
-      const defaultSlug = process.env.NEXT_PUBLIC_DEFAULT_NGO_SLUG || 'the-crawl-foundation';
-      return await db.getNgoBySlug(defaultSlug);
-    }
-
-    // 2. Custom Domain Resolution via site_domains
-    const store = loadSharedData();
-    const domains: SiteDomain[] = store.domains || initialDomains;
-    
-    // Exact or www match against verified domains
-    const matchedDomain = domains.find(d => 
-      !d.deleted_at && 
-      d.verified && 
-      (d.domain.toLowerCase() === host || d.domain.toLowerCase() === `www.${host}` || `www.${d.domain.toLowerCase()}` === host)
-    );
-
-    if (matchedDomain) {
-      const ngo = await db.getNgoById(matchedDomain.ngo_id);
-      if (ngo && ngo.status === 'active') {
-        domainResolutionCache.set(host, { ngo, expires: Date.now() + 60000 });
-        return ngo;
-      }
-    }
-
-    // Unregistered, unverified or unknown domain -> Returns null (caller displays neutral 404 domain unclaimed)
-    return null;
-  },
 
   // =========================================================================
   // ROLES, PERMISSIONS & USERS (RBAC)

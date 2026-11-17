@@ -134,7 +134,7 @@ export default function OurWorkSection({ ngo, activities }: OurWorkSectionProps)
                   </button>
 
                   <Link
-                    href={`/donate?ngo=${ngo.slug}`}
+                    href={`/site/${ngo.slug}/donate`}
                     className="text-[11px] font-semibold text-[#172B4D] hover:text-[#087FC1] px-2.5 py-1 rounded bg-[#F5F2EA] transition"
                   >
                     Support Drive →
@@ -214,7 +214,7 @@ export default function OurWorkSection({ ngo, activities }: OurWorkSectionProps)
                 Managed by <strong>{ngo.name}</strong>
               </span>
               <Link
-                href={`/donate?ngo=${ngo.slug}`}
+                href={`/site/${ngo.slug}/donate`}
                 onClick={() => setActiveModalActivity(null)}
                 className="w-full sm:w-auto px-6 h-[44px] rounded-xl text-xs font-bold text-white bg-[#087FC1] hover:bg-[#076ea7] inline-flex items-center justify-center transition"
               >
