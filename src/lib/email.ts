@@ -44,7 +44,7 @@ export async function sendDonationConfirmationEmail(ngo: NGO, donation: Donation
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #64748b;">Transaction ID:</td>
-                <td style="padding: 6px 0; font-family: monospace; text-align: right; color: #334155;">${donation.razorpay_payment_id || 'Captured Online'}</td>
+                <td style="padding: 6px 0; font-family: monospace; text-align: right; color: #334155;">${donation.transaction_ref || 'Direct Bank/UPI'}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #64748b;">Payment Status:</td>

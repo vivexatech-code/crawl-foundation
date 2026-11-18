@@ -82,8 +82,10 @@ export default function GalleryView({ ngo, settings, gallery }: GalleryViewProps
                 >
                   <Image
                     src={item.image_url}
-                    alt={item.title}
+                    alt={item.alt_text || item.title}
                     fill
+                    loading="lazy"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover group-hover:scale-102 transition-transform duration-300"
                   />
 
@@ -150,8 +152,10 @@ export default function GalleryView({ ngo, settings, gallery }: GalleryViewProps
             <div className="relative h-[65vh] w-full bg-black/90">
               <Image
                 src={activeModalItem.image_url}
-                alt={activeModalItem.title}
+                alt={activeModalItem.alt_text || activeModalItem.title}
                 fill
+                priority
+                sizes="(max-width: 1200px) 100vw, 1200px"
                 className="object-contain"
               />
             </div>
@@ -165,10 +169,13 @@ export default function GalleryView({ ngo, settings, gallery }: GalleryViewProps
                 {activeModalItem.caption && (
                   <p className="text-xs text-[#F5F2EA]/80 mt-1 max-w-xl font-body">{activeModalItem.caption}</p>
                 )}
+                {activeModalItem.alt_text && (
+                  <p className="text-[10px] text-[#F5F2EA]/50 italic mt-1 font-body">Description: {activeModalItem.alt_text}</p>
+                )}
               </div>
 
               <Link
-                href={`/site/${ngo.slug}/donate`}
+                href="/donate"
                 className="px-5 h-[42px] rounded-xl text-xs font-bold text-white bg-[#087FC1] hover:bg-[#076ea7] inline-flex items-center justify-center transition shrink-0"
               >
                 Support This Cause

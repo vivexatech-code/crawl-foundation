@@ -63,7 +63,7 @@ export default function DonationCTA({ ngo, content }: DonationCTAProps) {
         {/* Main CTA Button: Ocean Blue with Medium Rounded Corners (~52px height) */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            href={`/site/${ngo.slug}/donate?amount=${selectedAmount}`}
+            href={`/donate?amount=${selectedAmount}`}
             className="w-full sm:w-auto inline-flex items-center justify-center px-10 h-[52px] rounded-xl text-base font-bold text-white bg-[#087FC1] hover:bg-[#076ea7] shadow-warm transition-all duration-200"
           >
             <Heart className="w-4 h-4 mr-2.5 fill-white" />
@@ -74,10 +74,10 @@ export default function DonationCTA({ ngo, content }: DonationCTAProps) {
         {/* Trust Badges */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-[#F5F2EA]/75 pt-4 border-t border-white/10">
           <span className="flex items-center">
-            <ShieldCheck className="w-4 h-4 mr-1 text-[#10C9D4]" /> 256-Bit SSL Razorpay Encryption
+            <ShieldCheck className="w-4 h-4 mr-1 text-[#10C9D4]" /> Direct Bank & UPI Transfer
           </span>
           <span className="flex items-center">
-            <Check className="w-4 h-4 mr-1 text-[#10C9D4]" /> Instant 80G Compliant Digital Receipt
+            <Check className="w-4 h-4 mr-1 text-[#10C9D4]" /> 80G Tax Exemption Eligible
           </span>
           <span className="flex items-center">
             <Check className="w-4 h-4 mr-1 text-[#10C9D4]" /> Registered Trust (Deed No. 878 / 2023)

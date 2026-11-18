@@ -13,6 +13,7 @@ import {
   GalleryItem, 
   DonationPurpose, 
   Donation, 
+  DonationPaymentSettings,
   ContactSubmission,
   Role,
   Permission,
@@ -36,6 +37,7 @@ import {
   initialGalleryItems, 
   initialDonationPurposes, 
   initialDonations, 
+  initialPaymentSettings,
   initialContacts 
 } from './data-store';
 
@@ -65,6 +67,7 @@ function loadSharedData() {
       if (!parsed.users) parsed.users = initialUsers;
       if (!parsed.pages) parsed.pages = initialPages;
       if (!parsed.auditLogs) parsed.auditLogs = initialAuditLogs;
+      if (!parsed.paymentSettings) parsed.paymentSettings = initialPaymentSettings;
       return parsed;
     }
   } catch (e) {
@@ -85,6 +88,7 @@ function loadSharedData() {
     galleryItems: initialGalleryItems,
     donationPurposes: initialDonationPurposes,
     donations: initialDonations,
+    paymentSettings: initialPaymentSettings,
     contacts: initialContacts
   };
 }
@@ -149,12 +153,68 @@ export const db = {
     return list.find((n: NGO) => (n.id === id || n.slug === id) && !n.deleted_at) || null;
   },
 
+  async getNgoByDomain(rawHost: string): Promise<NGO | null> {
+    if (!rawHost) return null;
+    const host = rawHost.toLowerCase().trim().split(':')[0].replace(/^www\./, '');
+    if (!host) return null;
+
+    const store = loadSharedData();
+    const list: NGO[] = store.ngos || initialNgos;
+
+    // 1. Direct match on custom_domain or domains array on NGO
+    let matched = list.find((n: NGO) => {
+      if (n.deleted_at || n.status !== 'active') return false;
+      const primary = (n.custom_domain || '').toLowerCase().trim().replace(/^www\./, '');
+      if (primary && primary === host) return true;
+      if (Array.isArray(n.domains)) {
+        return n.domains.some(d => (d || '').toLowerCase().trim().replace(/^www\./, '') === host);
+      }
+      return false;
+    });
+
+    if (matched) return matched;
+
+    // 2. Match against store.domains (domain-to-ngo internal mappings)
+    const domainMappings = store.domains || initialDomains || [];
+    const mapping = domainMappings.find((d: any) => {
+      if (d.deleted_at) return false;
+      const dom = (d.domain || '').toLowerCase().trim().replace(/^www\./, '');
+      return dom === host;
+    });
+
+    if (mapping) {
+      matched = list.find((n: NGO) => n.id === mapping.ngo_id && !n.deleted_at && n.status === 'active');
+      if (matched) return matched;
+    }
+
+    // 3. Fallback match by slug (internal identifier)
+    matched = list.find((n: NGO) => {
+      if (n.deleted_at || n.status !== 'active') return false;
+      return n.slug === host;
+    });
+    if (matched) return matched;
+
+    // 4. Fallback for localhost in local development
+    if (host === 'localhost' || host === '127.0.0.1') {
+      const defaultSlug = process.env.NEXT_PUBLIC_DEFAULT_NGO_SLUG || 'the-crawl-foundation';
+      return list.find((n: NGO) => n.slug === defaultSlug && !n.deleted_at && n.status === 'active') || list[0] || null;
+    }
+
+    return null;
+  },
+
   async createNgo(ngoData: Partial<NGO>): Promise<NGO> {
     const newId = ngoData.id || crypto.randomUUID();
     const now = new Date().toISOString();
+    const cleanCustomDomain = ngoData.custom_domain
+      ? ngoData.custom_domain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, '').replace(/^www\./, '')
+      : undefined;
+
     const newNgo: NGO = {
       id: newId,
       slug: ngoData.slug || `ngo-${Date.now()}`,
+      custom_domain: cleanCustomDomain,
+      domains: ngoData.domains || (cleanCustomDomain ? [cleanCustomDomain] : []),
       name: ngoData.name || 'New Organization',
       legal_name: ngoData.legal_name || ngoData.name || 'New Organization Legal',
       tagline: ngoData.tagline || 'Working together for a better world',
@@ -178,6 +238,18 @@ export const db = {
       updated_at: now,
       deleted_at: null,
     };
+
+    if (cleanCustomDomain) {
+      const store = loadSharedData();
+      if (!store.domains) store.domains = [];
+      store.domains.push({
+        id: crypto.randomUUID(),
+        ngo_id: newId,
+        domain: cleanCustomDomain,
+        is_primary: true
+      });
+      saveSharedData(store);
+    }
 
     if (supabase) {
       const { data, error } = await supabase.from('ngos').insert(newNgo).select().single();
@@ -256,6 +328,14 @@ export const db = {
     const now = new Date().toISOString();
     const cleanUpdates = { ...updates, updated_at: now };
 
+    if (updates.custom_domain !== undefined) {
+      const cleanDom = updates.custom_domain
+        ? updates.custom_domain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, '').replace(/^www\./, '')
+        : undefined;
+      cleanUpdates.custom_domain = cleanDom;
+      cleanUpdates.domains = cleanDom ? [cleanDom] : [];
+    }
+
     if (supabase) {
       const { data, error } = await supabase
         .from('ngos')
@@ -270,6 +350,20 @@ export const db = {
     const idx = (store.ngos || []).findIndex((n: NGO) => n.id === id);
     if (idx !== -1) {
       store.ngos[idx] = { ...store.ngos[idx], ...cleanUpdates };
+
+      if (cleanUpdates.custom_domain !== undefined) {
+        if (!store.domains) store.domains = [];
+        store.domains = store.domains.filter((d: any) => d.ngo_id !== id || d.is_primary !== true);
+        if (cleanUpdates.custom_domain) {
+          store.domains.push({
+            id: crypto.randomUUID(),
+            ngo_id: id,
+            domain: cleanUpdates.custom_domain,
+            is_primary: true
+          });
+        }
+      }
+
       saveSharedData(store);
       return store.ngos[idx];
     }
@@ -740,70 +834,183 @@ export const db = {
   // =========================================================================
   // GALLERY
   // =========================================================================
-  async getGalleryItems(ngoId?: string): Promise<GalleryItem[]> {
+  async getGalleryItems(ngoId?: string, options?: { publishedOnly?: boolean }): Promise<GalleryItem[]> {
     if (supabase) {
       let q = supabase.from('gallery').select('*').is('deleted_at', null).order('display_order', { ascending: true });
       if (ngoId) q = q.eq('ngo_id', ngoId);
+      if (options?.publishedOnly) q = q.eq('is_published', true);
       const { data, error } = await q;
       if (!error && data) return data;
     }
     const store = loadSharedData();
     const list = store.galleryItems || initialGalleryItems;
-    const active = list.filter((g: GalleryItem) => !g.deleted_at);
-    return ngoId ? active.filter((g: GalleryItem) => g.ngo_id === ngoId) : active;
+    let active = list.filter((g: GalleryItem) => !g.deleted_at);
+    if (ngoId) active = active.filter((g: GalleryItem) => g.ngo_id === ngoId);
+    if (options?.publishedOnly) active = active.filter((g: GalleryItem) => g.is_published !== false);
+    return active.sort((a: GalleryItem, b: GalleryItem) => (a.display_order ?? 0) - (b.display_order ?? 0));
+  },
+
+  async getGalleryItemById(id: string): Promise<GalleryItem | null> {
+    if (supabase) {
+      const { data, error } = await supabase.from('gallery').select('*').eq('id', id).is('deleted_at', null).single();
+      if (!error && data) return data;
+    }
+    const store = loadSharedData();
+    const list = store.galleryItems || [];
+    return list.find((g: GalleryItem) => g.id === id && !g.deleted_at) || null;
   },
 
   async createGalleryItem(item: Partial<GalleryItem>): Promise<GalleryItem> {
+    const store = loadSharedData();
+    const list = store.galleryItems || initialGalleryItems;
+    const maxOrder = list.reduce((max: number, g: GalleryItem) => Math.max(max, g.display_order || 0), 0);
+    const now = new Date().toISOString();
+
     const newItem: GalleryItem = {
       id: item.id || crypto.randomUUID(),
       ngo_id: item.ngo_id || CRAWL_NGO_ID,
       title: item.title || 'Gallery Image',
       caption: item.caption || '',
-      category: item.category || 'General',
+      category: item.category || 'Community Drives',
       image_url: item.image_url || '',
       thumbnail_url: item.thumbnail_url || item.image_url || '',
-      event_date: item.event_date || new Date().toISOString().split('T')[0],
-      display_order: item.display_order || 10,
+      event_date: item.event_date || now.split('T')[0],
+      alt_text: item.alt_text || item.title || '',
+      display_order: item.display_order !== undefined ? item.display_order : maxOrder + 1,
       is_featured: item.is_featured ?? false,
       is_published: item.is_published ?? true,
+      created_at: now,
+      updated_at: now,
       deleted_at: null,
     };
     if (supabase) {
       await supabase.from('gallery').insert(newItem);
     }
-    const store = loadSharedData();
     store.galleryItems.push(newItem);
     saveSharedData(store);
     return newItem;
   },
 
   async updateGalleryItem(id: string, updates: Partial<GalleryItem>): Promise<GalleryItem | null> {
+    const cleanUpdates = { ...updates, updated_at: new Date().toISOString() };
     if (supabase) {
-      await supabase.from('gallery').update(updates).eq('id', id);
+      await supabase.from('gallery').update(cleanUpdates).eq('id', id);
     }
     const store = loadSharedData();
     const idx = store.galleryItems.findIndex((g: GalleryItem) => g.id === id);
     if (idx !== -1) {
-      store.galleryItems[idx] = { ...store.galleryItems[idx], ...updates };
+      store.galleryItems[idx] = { ...store.galleryItems[idx], ...cleanUpdates };
       saveSharedData(store);
       return store.galleryItems[idx];
     }
     return null;
   },
 
-  async deleteGalleryItem(id: string): Promise<boolean> {
+  async deleteGalleryItem(id: string, ngoId?: string): Promise<boolean> {
     const now = new Date().toISOString();
-    if (supabase) {
-      await supabase.from('gallery').update({ deleted_at: now }).eq('id', id);
-    }
     const store = loadSharedData();
-    const idx = store.galleryItems.findIndex((g: GalleryItem) => g.id === id);
+    const idx = store.galleryItems.findIndex((g: GalleryItem) => g.id === id && (!ngoId || g.ngo_id === ngoId));
     if (idx !== -1) {
       store.galleryItems[idx].deleted_at = now;
       saveSharedData(store);
+      if (supabase) {
+        await supabase.from('gallery').update({ deleted_at: now }).eq('id', id);
+      }
       return true;
     }
     return false;
+  },
+
+  async deleteMultipleGalleryItems(ids: string[], ngoId?: string): Promise<number> {
+    const now = new Date().toISOString();
+    const store = loadSharedData();
+    let count = 0;
+    for (const id of ids) {
+      const idx = store.galleryItems.findIndex((g: GalleryItem) => g.id === id && (!ngoId || g.ngo_id === ngoId));
+      if (idx !== -1) {
+        store.galleryItems[idx].deleted_at = now;
+        count++;
+      }
+    }
+    if (count > 0) {
+      saveSharedData(store);
+      if (supabase) {
+        await supabase.from('gallery').update({ deleted_at: now }).in('id', ids);
+      }
+    }
+    return count;
+  },
+
+  async reorderGalleryItems(ngoId: string, orderedIds: string[]): Promise<boolean> {
+    const store = loadSharedData();
+    const now = new Date().toISOString();
+    orderedIds.forEach((id, index) => {
+      const idx = store.galleryItems.findIndex((g: GalleryItem) => g.id === id && g.ngo_id === ngoId);
+      if (idx !== -1) {
+        store.galleryItems[idx].display_order = index + 1;
+        store.galleryItems[idx].updated_at = now;
+      }
+    });
+    saveSharedData(store);
+    return true;
+  },
+
+  // =========================================================================
+  // DONATION PAYMENT SETTINGS (DIRECT BANK & UPI)
+  // =========================================================================
+  async getPaymentSettings(ngoId: string = CRAWL_NGO_ID): Promise<DonationPaymentSettings> {
+    if (supabase) {
+      const { data, error } = await supabase.from('payment_settings').select('*').eq('ngo_id', ngoId).single();
+      if (!error && data) return data;
+    }
+    const store = loadSharedData();
+    const settingsMap = store.paymentSettings || initialPaymentSettings;
+    if (settingsMap && settingsMap[ngoId]) {
+      return settingsMap[ngoId];
+    }
+    if (initialPaymentSettings && initialPaymentSettings[ngoId]) {
+      return initialPaymentSettings[ngoId];
+    }
+    return {
+      id: `pay-sett-${ngoId}`,
+      ngo_id: ngoId,
+      bank_account_name: 'The Crawl Foundation',
+      bank_name: 'Union Bank of India',
+      bank_account_number: '564501010033661',
+      bank_ifsc: 'UBIN0556459',
+      bank_branch: 'Union Bank of India, Patel Nagar Branch, Industrial Area, Patel Nagar, Dehradun - 248001',
+      upi_id: '89512401@ubin',
+      upi_payee_name: 'The Crawl Foundation',
+      qr_code_url: '/images/payments/crawl-foundation-upi-qr.png',
+      enable_bank_transfer: true,
+      enable_qr_code: true,
+      enable_upi_app: true,
+      instructions: 'Direct contribution to The Crawl Foundation. Contributions go directly towards our healthcare, child welfare, and community relief initiatives.',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  },
+
+  async updatePaymentSettings(ngoId: string, updates: Partial<DonationPaymentSettings>): Promise<DonationPaymentSettings> {
+    const existing = await this.getPaymentSettings(ngoId);
+    const updated: DonationPaymentSettings = {
+      ...existing,
+      ...updates,
+      ngo_id: ngoId,
+      updated_at: new Date().toISOString()
+    };
+
+    if (supabase) {
+      await supabase.from('payment_settings').upsert(updated, { onConflict: 'ngo_id' });
+    }
+
+    const store = loadSharedData();
+    if (!store.paymentSettings) {
+      store.paymentSettings = { ...initialPaymentSettings };
+    }
+    store.paymentSettings[ngoId] = updated;
+    saveSharedData(store);
+    return updated;
   },
 
   // =========================================================================
@@ -884,14 +1091,12 @@ export const db = {
       purpose_id: donation.purpose_id,
       purpose_name: donation.purpose_name || 'General Support',
       requires_80g: donation.requires_80g ?? false,
-      razorpay_order_id: donation.razorpay_order_id,
-      razorpay_payment_id: donation.razorpay_payment_id,
-      razorpay_signature: donation.razorpay_signature,
-      payment_status: donation.payment_status || 'created',
-      payment_method: donation.payment_method || 'Online',
+      transaction_ref: donation.transaction_ref || '',
+      payment_status: donation.payment_status || 'unverified',
+      payment_method: donation.payment_method || 'Direct Transfer',
       notes: donation.notes || '',
       created_at: new Date().toISOString(),
-      paid_at: donation.payment_status === 'captured' ? new Date().toISOString() : null,
+      paid_at: donation.payment_status === 'verified' || donation.payment_status === 'captured' ? new Date().toISOString() : null,
       deleted_at: null,
     };
 
@@ -909,52 +1114,6 @@ export const db = {
     store.donations.unshift(newDonation);
     saveSharedData(store);
     return newDonation;
-  },
-
-  async updateDonationPayment(
-    orderId: string, 
-    paymentId: string, 
-    signature: string, 
-    status: 'captured' | 'failed',
-    paymentMethod: string = 'Online'
-  ): Promise<Donation | null> {
-    const updates: any = {
-      payment_status: status,
-      payment_method: paymentMethod,
-      paid_at: status === 'captured' ? new Date().toISOString() : null,
-    };
-
-    if (status === 'captured') {
-      updates.razorpay_payment_id = paymentId;
-      updates.razorpay_signature = signature;
-    } else {
-      updates.notes = `Payment failed / invalid signature. Attempted reference: ${paymentId}`;
-    }
-
-    if (supabase) {
-      const { data, error } = await supabase.from('donations').update(updates).eq('razorpay_order_id', orderId).select().single();
-      if (error) {
-        console.error('Supabase updateDonationPayment error:', error);
-      }
-      if (!error && data) {
-        const store = loadSharedData();
-        const idx = store.donations.findIndex((d: Donation) => d.razorpay_order_id === orderId);
-        if (idx !== -1) {
-          store.donations[idx] = { ...store.donations[idx], ...updates };
-          saveSharedData(store);
-        }
-        return data;
-      }
-    }
-
-    const store = loadSharedData();
-    const idx = store.donations.findIndex((d: Donation) => d.razorpay_order_id === orderId);
-    if (idx !== -1) {
-      store.donations[idx] = { ...store.donations[idx], ...updates };
-      saveSharedData(store);
-      return store.donations[idx];
-    }
-    return null;
   },
 
   // =========================================================================

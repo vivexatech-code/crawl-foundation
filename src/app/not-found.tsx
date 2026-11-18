@@ -18,13 +18,13 @@ export default function NotFound() {
             Organization Website Not Found
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-            The requested NGO website or page does not exist or may currently be inactive. Please verify the website slug in the URL.
+            The requested NGO website or page does not exist or may currently be inactive.
           </p>
         </div>
 
         <div className="pt-2">
           <Link
-            href="/site/the-crawl-foundation"
+            href="/"
             className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-[#087FC1] hover:bg-[#076ba3] text-white text-xs font-bold transition shadow-sm"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />

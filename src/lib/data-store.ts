@@ -9,6 +9,7 @@ import {
   GalleryItem, 
   DonationPurpose, 
   Donation, 
+  DonationPaymentSettings,
   ContactSubmission,
   Role,
   Permission,
@@ -43,6 +44,8 @@ export const initialNgos: NGO[] = [
     admin_sidebar_color: '#172B4D',
     admin_primary_color: '#087FC1',
     admin_button_color: '#087FC1',
+    custom_domain: 'thecrawlfoundation.org',
+    domains: ['thecrawlfoundation.org', 'testing5.vivexatech.in'],
   },
   {
     id: VIKAS_NGO_ID,
@@ -66,6 +69,8 @@ export const initialNgos: NGO[] = [
     admin_sidebar_color: '#064e3b',
     admin_primary_color: '#059669',
     admin_button_color: '#059669',
+    custom_domain: 'vikasyouth.org',
+    domains: ['vikasyouth.org'],
   }
 ];
 
@@ -130,6 +135,41 @@ export const initialSiteSettings: Record<string, SiteSettings> = {
     currency: 'INR',
     min_donation_amount: 100,
     allow_anonymous_donations: true,
+  }
+};
+
+export const initialPaymentSettings: Record<string, DonationPaymentSettings> = {
+  [CRAWL_NGO_ID]: {
+    id: 'pay-sett-crawl',
+    ngo_id: CRAWL_NGO_ID,
+    bank_account_name: 'The Crawl Foundation',
+    bank_name: 'Union Bank of India',
+    bank_account_number: '564501010033661',
+    bank_ifsc: 'UBIN0556459',
+    bank_branch: 'Union Bank of India, Patel Nagar Branch, Industrial Area, Patel Nagar, Dehradun - 248001',
+    upi_id: '89512401@ubin',
+    upi_payee_name: 'The Crawl Foundation',
+    qr_code_url: '/images/payments/crawl-foundation-upi-qr.png',
+    enable_bank_transfer: true,
+    enable_qr_code: true,
+    enable_upi_app: true,
+    instructions: 'Direct contribution to The Crawl Foundation. Contributions go directly towards our medical assistance and children\'s welfare programs in Dehradun, Uttarakhand.',
+  },
+  [VIKAS_NGO_ID]: {
+    id: 'pay-sett-vikas',
+    ngo_id: VIKAS_NGO_ID,
+    bank_account_name: 'Vikas Youth Foundation',
+    bank_name: 'State Bank of India',
+    bank_account_number: '38920199201',
+    bank_ifsc: 'SBIN0001234',
+    bank_branch: 'Main Branch, Dehradun',
+    upi_id: 'vikasyouth@sbi',
+    upi_payee_name: 'Vikas Youth Foundation',
+    qr_code_url: '/images/payments/crawl-foundation-upi-qr.png',
+    enable_bank_transfer: true,
+    enable_qr_code: true,
+    enable_upi_app: true,
+    instructions: 'Support youth education and skills training programs.',
   }
 };
 
@@ -249,16 +289,20 @@ export const initialActivities: Activity[] = [
   {
     id: 'act-2',
     ngo_id: CRAWL_NGO_ID,
-    title: 'Underprivileged Family Healthcare & Medicine Assistance',
+    title: 'Underprivileged Family Healthcare & In-Patient Hospital Assistance',
     slug: 'underprivileged-family-healthcare-assistance',
     category: 'Healthcare Support',
-    short_description: 'Facilitating medical consultations, essential diagnostic tests, and prescribed medicines for families lacking access to healthcare.',
-    full_content: 'In accordance with our Trust Deed objectives for medical relief, The Crawl Foundation coordinates medical checkups and provides prescription medicines to needy children and elderly family members. We partner with local healthcare professionals to ensure preventive health awareness and early treatment of seasonal ailments.',
-    featured_image_url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
-    gallery_images: ['https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80'],
-    location: 'Neshvilla Road & Surrounding Areas, Dehradun',
-    activity_date: '2024-03-10',
-    status: 'ongoing',
+    short_description: 'Facilitating in-patient bedside care, prescription medicines, and emergency patient assistance in Dehradun hospital wards.',
+    full_content: 'In accordance with our Trust Deed objectives for medical relief, The Crawl Foundation coordinates medical support and provides prescription medicines and emergency hospital supplies to needy patients and elderly individuals. Our active volunteers and trustees regularly visit hospital wards to provide bedside care and warm blankets directly to patients.',
+    featured_image_url: '/images/gallery/hospital-bedside-patient-support.jpg',
+    gallery_images: [
+      '/images/gallery/hospital-bedside-patient-support.jpg',
+      '/images/gallery/hospital-ward-patient-care.jpg',
+      '/images/gallery/hospital-outreach-medical-team.jpg'
+    ],
+    location: 'Hospital Medical Wards & Clinics, Dehradun',
+    activity_date: '2024-03-12',
+    status: 'completed',
     is_featured: true,
     is_published: true,
     display_order: 2
@@ -266,17 +310,21 @@ export const initialActivities: Activity[] = [
   {
     id: 'act-3',
     ngo_id: CRAWL_NGO_ID,
-    title: 'Winter Warmth & Ration Kit Distribution',
+    title: 'Winter Warmth & Community Clothes Distribution Drive',
     slug: 'winter-warmth-ration-kit-distribution',
-    category: 'Poor Relief',
-    short_description: 'Seasonal winter relief drive distributing heavy blankets, warm jackets, and essential grocery kits to vulnerable households.',
-    full_content: 'During the harsh winter months in Uttarakhand, low-income families without adequate shelter face severe conditions. The Crawl Foundation launched an immediate relief drive distributing heavy thermal blankets, woolens, and monthly ration provisions to protect vulnerable children and senior citizens.',
-    featured_image_url: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80',
-    gallery_images: ['https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80'],
-    location: 'Dehradun Suburbs, Uttarakhand',
-    activity_date: '2023-12-20',
+    category: 'Relief & Warmth',
+    short_description: 'Grassroots winter relief drive distributing clean warm clothing, sweaters, and essential items directly to slum community children and families.',
+    full_content: 'During the harsh cold months in Uttarakhand, low-income families without adequate shelter face severe conditions. The Crawl Foundation launched an on-ground community relief drive distributing warm jackets, woolen clothes, and essential supplies directly to children and mothers living in roadside settlements in Dehradun.',
+    featured_image_url: '/images/gallery/community-clothes-distribution-drive.jpg',
+    gallery_images: [
+      '/images/gallery/community-clothes-distribution-drive.jpg',
+      '/images/gallery/winter-warmth-clothes-handover.jpg',
+      '/images/gallery/underprivileged-children-clothes-relief.jpg'
+    ],
+    location: 'Roadside Slum Clusters & Suburbs, Dehradun',
+    activity_date: '2024-01-25',
     status: 'completed',
-    is_featured: false,
+    is_featured: true,
     is_published: true,
     display_order: 3
   }
@@ -323,6 +371,78 @@ export const initialTeamMembers: TeamMember[] = [
 
 export const initialGalleryItems: GalleryItem[] = [
   {
+    id: 'gal-crawl-hospital-1',
+    ngo_id: CRAWL_NGO_ID,
+    title: 'In-Patient Hospital Support & Bedside Relief',
+    caption: 'The Crawl Foundation volunteer providing immediate comfort, medication support, and warm blankets to an elderly patient during our Dehradun hospital outreach rounds.',
+    category: 'Healthcare Support',
+    image_url: '/images/gallery/hospital-bedside-patient-support.jpg',
+    event_date: '2024-03-12',
+    is_featured: true,
+    is_published: true,
+    display_order: 1
+  },
+  {
+    id: 'gal-crawl-hospital-2',
+    ngo_id: CRAWL_NGO_ID,
+    title: 'Heartfelt Gratitude from In-Patient Beneficiary',
+    caption: 'An elderly patient in a medical ward extending heartfelt gratitude and blessings to our volunteer team following the distribution of emergency patient supplies.',
+    category: 'Healthcare Support',
+    image_url: '/images/gallery/hospital-ward-patient-care.jpg',
+    event_date: '2024-03-12',
+    is_featured: true,
+    is_published: true,
+    display_order: 2
+  },
+  {
+    id: 'gal-crawl-hospital-3',
+    ngo_id: CRAWL_NGO_ID,
+    title: 'Crawl Foundation Trustees & Medical Outreach Team',
+    caption: 'Our active trustees and volunteers in official Crawl Foundation jerseys visiting hospital wards to ensure indigent patients receive medicine and blanket relief.',
+    category: 'Healthcare Support',
+    image_url: '/images/gallery/hospital-outreach-medical-team.jpg',
+    event_date: '2024-03-12',
+    is_featured: true,
+    is_published: true,
+    display_order: 3
+  },
+  {
+    id: 'gal-crawl-clothes-1',
+    ngo_id: CRAWL_NGO_ID,
+    title: 'Community Warm Clothes & Winter Distribution Drive',
+    caption: 'Founder & volunteers of The Crawl Foundation directly distributing bundles of fresh, warm winter clothes to children and mothers living in roadside slum settlements.',
+    category: 'Relief & Warmth',
+    image_url: '/images/gallery/community-clothes-distribution-drive.jpg',
+    event_date: '2024-01-25',
+    is_featured: true,
+    is_published: true,
+    display_order: 4
+  },
+  {
+    id: 'gal-crawl-clothes-2',
+    ngo_id: CRAWL_NGO_ID,
+    title: 'Direct Handover of Warm Clothing Essentials',
+    caption: 'Volunteer distributing protective garments to children and families from organized aid boxes during our urban relief drive in Dehradun.',
+    category: 'Relief & Warmth',
+    image_url: '/images/gallery/winter-warmth-clothes-handover.jpg',
+    event_date: '2024-01-25',
+    is_featured: true,
+    is_published: true,
+    display_order: 5
+  },
+  {
+    id: 'gal-crawl-clothes-3',
+    ngo_id: CRAWL_NGO_ID,
+    title: 'Protecting Underprivileged Children with Winter Wear',
+    caption: 'Handing out woolen sweaters, jackets, and clean clothing to young girls and boys to protect them from harsh weather conditions.',
+    category: 'Child Welfare',
+    image_url: '/images/gallery/underprivileged-children-clothes-relief.jpg',
+    event_date: '2024-01-25',
+    is_featured: true,
+    is_published: true,
+    display_order: 6
+  },
+  {
     id: 'gal-1',
     ngo_id: CRAWL_NGO_ID,
     title: 'Community Outreach & Education Drive',
@@ -332,43 +452,19 @@ export const initialGalleryItems: GalleryItem[] = [
     event_date: '2024-02-15',
     is_featured: true,
     is_published: true,
-    display_order: 1
+    display_order: 7
   },
   {
     id: 'gal-2',
     ngo_id: CRAWL_NGO_ID,
-    title: 'Mrs. Vimmy Kaul, Co-Founder',
+    title: 'Mrs. Vimmy Kaul, Founder Trustee',
     caption: 'Founder Trustee & Associate President leading grassroots operations in Dehradun.',
     category: 'Leadership',
     image_url: '/images/team/vimmy-kaul.jpg',
     event_date: '2023-06-01',
     is_featured: true,
     is_published: true,
-    display_order: 2
-  },
-  {
-    id: 'gal-3',
-    ngo_id: CRAWL_NGO_ID,
-    title: 'Nutritional Meal & Snack Distribution',
-    caption: 'Ensuring children in underserved communities receive wholesome nutrition alongside learning materials.',
-    category: 'Relief & Nutrition',
-    image_url: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80',
-    event_date: '2024-01-20',
-    is_featured: true,
-    is_published: true,
-    display_order: 3
-  },
-  {
-    id: 'gal-4',
-    ngo_id: CRAWL_NGO_ID,
-    title: 'Pediatric Health Assistance',
-    caption: 'Facilitating essential medical checkups and prescribed medical care for low-income families.',
-    category: 'Healthcare Support',
-    image_url: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=800&q=80',
-    event_date: '2024-03-05',
-    is_featured: true,
-    is_published: true,
-    display_order: 4
+    display_order: 8
   }
 ];
 

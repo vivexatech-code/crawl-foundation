@@ -13,7 +13,6 @@ interface FooterProps {
 
 export default function Footer({ ngo, settings }: FooterProps) {
   const currentYear = new Date().getFullYear();
-  const basePath = `/site/${ngo.slug}`;
 
   return (
     <footer className="bg-[#172B4D] text-[#FCFBF8] pt-16 pb-12 border-t border-[#172B4D]">
@@ -59,22 +58,22 @@ export default function Footer({ ngo, settings }: FooterProps) {
             <h4 className="text-xs font-bold uppercase tracking-wider text-white font-heading">Navigation</h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link href={basePath} className="text-[#F5F2EA]/80 hover:text-white transition">Home</Link>
+                <Link href="/" className="text-[#F5F2EA]/80 hover:text-white transition">Home</Link>
               </li>
               <li>
-                <Link href={`${basePath}/about`} className="text-[#F5F2EA]/80 hover:text-white transition">About Our Organization</Link>
+                <Link href="/about" className="text-[#F5F2EA]/80 hover:text-white transition">About Our Organization</Link>
               </li>
               <li>
-                <Link href={`${basePath}/activities`} className="text-[#F5F2EA]/80 hover:text-white transition">Field Initiatives & Drives</Link>
+                <Link href="/activities" className="text-[#F5F2EA]/80 hover:text-white transition">Field Initiatives & Drives</Link>
               </li>
               <li>
-                <Link href={`${basePath}/gallery`} className="text-[#F5F2EA]/80 hover:text-white transition">Photo Gallery</Link>
+                <Link href="/gallery" className="text-[#F5F2EA]/80 hover:text-white transition">Photo Gallery</Link>
               </li>
               <li>
-                <Link href={`${basePath}/contact`} className="text-[#F5F2EA]/80 hover:text-white transition">Contact & Volunteer</Link>
+                <Link href="/contact" className="text-[#F5F2EA]/80 hover:text-white transition">Contact & Volunteer</Link>
               </li>
               <li>
-                <Link href={`${basePath}/donate`} className="text-[#F5C518] font-bold hover:underline transition inline-flex items-center">
+                <Link href="/donate" className="text-[#F5C518] font-bold hover:underline transition inline-flex items-center">
                   <Heart className="w-3 h-3 mr-1 fill-[#F5C518] inline" /> Make a Donation
                 </Link>
               </li>
@@ -98,9 +97,9 @@ export default function Footer({ ngo, settings }: FooterProps) {
                 </div>
               )}
               <div className="pt-2">
-                <Link href={`${basePath}/privacy-policy`} className="block text-[#F5F2EA]/70 hover:text-white transition text-[11px]">Privacy Policy</Link>
-                <Link href={`${basePath}/refund-policy`} className="block text-[#F5F2EA]/70 hover:text-white transition text-[11px] mt-1">Refund & Donation Policy</Link>
-                <Link href={`${basePath}/terms-conditions`} className="block text-[#F5F2EA]/70 hover:text-white transition text-[11px] mt-1">Terms & Conditions</Link>
+                <Link href="/privacy-policy" className="block text-[#F5F2EA]/70 hover:text-white transition text-[11px]">Privacy Policy</Link>
+                <Link href="/refund-policy" className="block text-[#F5F2EA]/70 hover:text-white transition text-[11px] mt-1">Refund & Donation Policy</Link>
+                <Link href="/terms-conditions" className="block text-[#F5F2EA]/70 hover:text-white transition text-[11px] mt-1">Terms & Conditions</Link>
               </div>
             </div>
           </div>

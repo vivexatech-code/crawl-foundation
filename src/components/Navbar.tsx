@@ -15,14 +15,12 @@ export default function Navbar({ ngo }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  const basePath = `/site/${ngo.slug}`;
-
   const navLinks = [
-    { name: 'Home', href: `${basePath}` },
-    { name: 'About Us', href: `${basePath}/about` },
-    { name: 'Our Work', href: `${basePath}/activities` },
-    { name: 'Gallery', href: `${basePath}/gallery` },
-    { name: 'Contact', href: `${basePath}/contact` },
+    { name: 'Home', href: '/' },
+    { name: 'About Us', href: '/about' },
+    { name: 'Our Work', href: '/activities' },
+    { name: 'Gallery', href: '/gallery' },
+    { name: 'Contact', href: '/contact' },
   ];
 
   return (
@@ -49,7 +47,7 @@ export default function Navbar({ ngo }: NavbarProps) {
         <div className="flex items-center justify-between h-20">
           
           {/* Logo & Brand Identity */}
-          <Link href={basePath} className="flex items-center space-x-3.5 group">
+          <Link href="/" className="flex items-center space-x-3.5 group">
             <div className="relative w-12 h-12 rounded-full overflow-hidden border border-[#E8E5DE] shadow-subtle group-hover:scale-102 transition-transform duration-200 bg-white">
               <Image
                 src={ngo.logo_url || '/images/brand/logo.jpg'}
@@ -95,7 +93,7 @@ export default function Navbar({ ngo }: NavbarProps) {
           {/* Donate CTA */}
           <div className="hidden sm:flex items-center space-x-4">
             <Link
-              href={`${basePath}/donate`}
+              href="/donate"
               className="inline-flex items-center justify-center px-6 h-[48px] rounded-xl text-sm font-bold text-white bg-[#087FC1] hover:bg-[#076ea7] shadow-subtle hover:shadow-warm transition-all duration-200"
             >
               <Heart className="w-4 h-4 mr-2 fill-white" />
@@ -106,7 +104,7 @@ export default function Navbar({ ngo }: NavbarProps) {
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center space-x-2">
             <Link
-              href={`${basePath}/donate`}
+              href="/donate"
               className="inline-flex items-center px-3.5 h-[38px] rounded-lg text-xs font-bold text-white bg-[#087FC1]"
             >
               <Heart className="w-3.5 h-3.5 mr-1 fill-white" />
@@ -144,7 +142,7 @@ export default function Navbar({ ngo }: NavbarProps) {
             })}
             <div className="pt-2">
               <Link
-                href={`${basePath}/donate`}
+                href="/donate"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full inline-flex items-center justify-center h-[48px] rounded-xl text-sm font-bold text-white bg-[#087FC1] hover:bg-[#076ea7] shadow-sm"
               >

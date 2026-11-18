@@ -29,6 +29,8 @@ export interface NGO {
   admin_sidebar_color?: string;
   admin_primary_color?: string;
   admin_button_color?: string;
+  custom_domain?: string;
+  domains?: string[];
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;
@@ -93,8 +95,7 @@ export interface SiteSettings {
   meta_keywords?: string;
   og_image_url?: string;
 
-  // Razorpay
-  razorpay_key_id?: string;
+  // Currency & Amounts
   currency: string;
   min_donation_amount: number;
   allow_anonymous_donations: boolean;
@@ -197,9 +198,12 @@ export interface GalleryItem {
   image_url: string;
   thumbnail_url?: string;
   event_date?: string;
+  alt_text?: string;
   display_order: number;
   is_featured: boolean;
   is_published: boolean;
+  created_at?: string;
+  updated_at?: string;
   deleted_at?: string | null;
 }
 
@@ -212,6 +216,25 @@ export interface DonationPurpose {
   is_active: boolean;
   display_order: number;
   deleted_at?: string | null;
+}
+
+export interface DonationPaymentSettings {
+  id: string;
+  ngo_id: string;
+  bank_account_name: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_ifsc: string;
+  bank_branch: string;
+  upi_id: string;
+  upi_payee_name: string;
+  qr_code_url: string;
+  enable_bank_transfer: boolean;
+  enable_qr_code: boolean;
+  enable_upi_app: boolean;
+  instructions?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Donation {
@@ -228,10 +251,8 @@ export interface Donation {
   purpose_id?: string;
   purpose_name: string;
   requires_80g: boolean;
-  razorpay_order_id?: string;
-  razorpay_payment_id?: string;
-  razorpay_signature?: string;
-  payment_status: 'created' | 'captured' | 'failed' | 'refunded';
+  transaction_ref?: string;
+  payment_status: 'created' | 'pending' | 'captured' | 'failed' | 'cancelled' | 'refunded' | 'unverified' | 'verified';
   payment_method?: string;
   notes?: string;
   receipt_url?: string;
